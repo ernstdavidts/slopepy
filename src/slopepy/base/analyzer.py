@@ -4,6 +4,13 @@ import numpy as np
 import pandas as pd
 import piecewise_regression
 from sklearn.linear_model import LinearRegression
+from .load_data import load_data
+
+x, y = load_data(
+    source="/Users/ernstdavidts/slopepy/slopepy/tests/tests/test_data/RAMP_1711_Python.csv",
+    intensity="WR",
+    parameter="V'CO2",
+)
 
 @dataclass
 class SlopeProtocolResults:
@@ -22,31 +29,13 @@ class SlopeProtocolAnalyzer:
 
     def __init__(
         self,
-        data_path: str,
-        intensity: Iterable[int],
-        parameter_column: str,
-        warm_up_time: int = 3,
+        x = np.ndarray,
+        y = np.ndarray,
         baseline_watt:int = 50,
-        apply_mrt_correction: bool = False,
     ):
-        self.data_path = data_path
-        self.intensity_column = intensity
-        self.parameter_column = parameter_column
-        self.warm_up_time = warm_up_time
+        self.x = x
+        self.y = y
         self.baseline_watt = baseline_watt
-        self.apply_mrt_correction = apply_mrt_correction
-
-        self._load_data()
-
-    # -------------------------
-    # Data handling
-    # -------------------------
-    def _load_data(self):
-        protocol = self.warm_up_time * 12
-        df = pd.read_csv(self.data_path, skiprows=np.arange(1, protocol))
-
-        self.x = df[self.intensity_column].to_numpy()
-        self.y = df[self.parameter_column].to_numpy()
 
     # -------------------------
     # Piecewise regression
@@ -87,7 +76,7 @@ class SlopeProtocolAnalyzer:
     def analyze(self) -> SlopeProtocolResults:
         bp1, bp2, pw_fit = self.compute_breakpoints()
 
-        mrt = self.compute_mrt()
+        mrt = self._compute_mrt()
         bp1_corr = bp1 - mrt
         bp2_corr = bp2 - mrt
         bp2_corr = bp2_corr - ((bp2 - bp1) * (0.014 - 0.01) / 0.014)
@@ -100,14 +89,3 @@ class SlopeProtocolAnalyzer:
             mrt=mrt,
             pw_fit=pw_fit
         )
-    
-result = SlopeProtocolAnalyzer(
-    data_path="data/slope_protocol.csv",
-    intensity_column="Watt",
-    parameter_column="VO2",
-    warm_up_time=3,
-    baseline_watt=50,
-    apply_mrt_correction=True
-).analyze()
-
-result.breakpoint2_raw
