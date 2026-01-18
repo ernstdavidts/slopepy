@@ -6,11 +6,12 @@ import piecewise_regression
 from sklearn.linear_model import LinearRegression
 from .load_data import load_data
 
-x, y = load_data(
-    source="/Users/ernstdavidts/slopepy/slopepy/tests/tests/test_data/RAMP_1711_Python.csv",
-    intensity="WR",
-    parameter="V'CO2",
-)
+if __name__ == "__main__":
+    x, y = load_data(
+        source="/Users/ernstdavidts/slopepy/slopepy/tests/test/test_data/RAMP 17.11.xlsx",
+        intensity="WR",
+        parameter="V'CO2",
+    )
 
 @dataclass
 class SlopeProtocolResults:
@@ -41,7 +42,10 @@ class SlopeProtocolAnalyzer:
     # Piecewise regression
     # -------------------------
     def compute_breakpoints(self):
-        pw_fit = piecewise_regression.Fit(self.x, self.y, n_breakpoints=2)
+        x = self.x
+        y = self.y
+        
+        pw_fit = piecewise_regression.Fit(x, y, n_breakpoints=2)
         results = pw_fit.get_results()
 
         bp1 = results["estimates"]["breakpoint1"]["estimate"]
@@ -78,8 +82,7 @@ class SlopeProtocolAnalyzer:
 
         mrt = self._compute_mrt()
         bp1_corr = bp1 - mrt
-        bp2_corr = bp2 - mrt
-        bp2_corr = bp2_corr - ((bp2 - bp1) * (0.014 - 0.01) / 0.014)
+        bp2_corr = bp2 - mrt - ((bp2 - bp1) * (0.014 - 0.01) / 0.014)
 
         return SlopeProtocolResults(
             breakpoint1=bp1_corr,
